@@ -3,7 +3,7 @@ const app = express();
 const mongoose = require("mongoose");
 app.use(express.json());
 
-mongoose.connect("mongodb+srv://manan:manan0112@cluster0.xordvmt.mongodb.net/?appName=Cluster0")
+mongoose.connect("")
 .then(()=> console.log("MongoDB connected succesfully"))
 .catch((error)=> console.log("MongoDB" , error))
 
