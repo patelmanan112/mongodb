@@ -2,8 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose")
 const app = express();
 app.use(express.json());
-// mongodb+srv://manan:manan0112@cluster0.xordvmt.mongodb.net/?appName=Cluster0
-mongoose.connect("")
+
+mongoose.connect("mongodb+srv://manan:manan0112@cluster0.xordvmt.mongodb.net/?appName=Cluster0")
     .then(() => console.log("MongoDB connected Succesfully"))
     .catch((error) => console.log("Mongodb error ", error))
 
@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema({
         minlength: 3,
         required: true
     },
+
+    mail:{},        
     email: {
         type: String,
         lowercase: true,
@@ -55,7 +57,7 @@ app.post("/students", async (req, res) => {
     catch (error) {
         res.status(500).json({ "Error ": error.message })
     }
-})
+})  
 
 app.post("/students/bulk", async (req, res) => {
     try {
@@ -91,7 +93,41 @@ app.get("/students/course/:course", async (req, res) => {
         res.status(404).send("Student course is invalid or wrong spelling 😢")
     }
 })
+app.get("/student/role", async (req, res) => {
+    try {
+        const { course, role } = req.query;
+        console.log(req.query);
 
+        let filter = {};
+
+        if (role) {
+            filter.role = role;
+        }
+
+        if (course) {
+            filter.course = course;
+        }
+
+        const students = await User.find(filter);
+        res.status(200).json(students);
+    }
+    catch (error) {
+        res.status(500).send(error.message);
+    }
+});
+app.get("/student-page" ,async (req , res)=>{
+    try{
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page -1)*limit;
+        const student = await User.find().skip(skip).limit(limit);
+
+        res.status(201).json(student);
+    }
+    catch(error){
+        res.status(404).json(error.message)
+    }
+})
 app.put("/students/:id", async (req, res) => {
 try{    const id = req.params.id
     const data = await User.findByIdAndUpdate(id, req.body, {

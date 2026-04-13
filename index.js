@@ -1,24 +1,78 @@
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
+const passport = require("passport");
+const localStrategy = require("passport-local").Strategy;
 app.use(express.json());
 
-mongoose.connect("")
+mongoose.connect("mongodb+srv://manan:manan0112@cluster0.xordvmt.mongodb.net/?appName=Cluster0")
 .then(()=> console.log("MongoDB connected succesfully"))
 .catch((error)=> console.log("MongoDB" , error))
 
 const userSchema = new mongoose.Schema({
     name : String,
     age : Number,
-    email : String
+    email : String,
+    username : {
+        type : String,
+        required : [true , "Username must be there"],
+        unique : true,
+        minlength : 4
+    },
+    password : String
 })
 const User = mongoose.model("user" , userSchema);
+userSchema.pre("save" , async function(next){
+    const user = this;
+    if(!user.isModified("password")){
+        return next();
+    }
+    try{
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(user.password, salt);
+        user.password = hashedPassword; 
+        next();
+    }
+    catch(error){   
+        return next(error); 
+    } 
+})
 
-app.get("/user" , async (req , res)=>{
+passport.use( new localStrategy(async (username , password , done)=>{
+    try{
+            const user =    await User.findOne({username : username});
+            if(!user){
+                return done(null , false , {message : "User not found"})
+            }
+            const isPasswordMatch = await user.password === password;
+           if(isPasswordMatch){
+            return done(null , user);
+           }
+              else{ 
+                return done(null , false , {message : "Incorrect password"})
+              }
+    }
+    catch(error){
+        return done(error);
+    }
+}))
+
+app.use(passport.initialize());
+const logRequest = (req , res , next)=>{
+    console.log("Request received at " , new Date());
+    next();
+}
+app.use(logRequest);
+const localAuth = passport.authenticate("local" , {session : false});
+app.get("/" ,localAuth, (req , res)=>{
+    res.status(200).send("Server has been started")
+})
+app.get("/user" ,logRequest, async (req , res)=>{
  try{ 
       const data = await User.find({});
     res.status(200).json(data);
 }
+
 catch(error){
     res.status(500).json({error : error.message})
 }
